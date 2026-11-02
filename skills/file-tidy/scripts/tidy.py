@@ -51,16 +51,29 @@ def skippable(p):
         return True
 
 
-def capture_date(p):
-    """Best effort, no third-party deps: macOS Spotlight -> ffprobe (video) -> date in filename -> mtime."""
-    if sys.platform == "darwin":
+def spotlight_dates(paths):
+    """One mdls call per 500 files (one call per file is minutes on a big drive). {path: (content, fs)}."""
+    got = {}
+    for i in range(0, len(paths) if sys.platform == "darwin" else 0, 500):
+        chunk = paths[i:i + 500]
         try:
             o = subprocess.run(["mdls", "-raw", "-nullMarker", "", "-name", "kMDItemContentCreationDate",
-                                "-name", "kMDItemFSCreationDate", p], capture_output=True, text=True, timeout=10).stdout
-            content, fs = (o.split("\0") + ["", ""])[:2]
-            if content and content != fs:  # equal = Spotlight only copied the filesystem date, no EXIF/QuickTime date
-                return dt.datetime.strptime(content[:19], "%Y-%m-%d %H:%M:%S"), "metadata"
+                                "-name", "kMDItemFSCreationDate", *chunk], capture_output=True, text=True, timeout=120).stdout
+            v = o.split("\0")
+            if len(v) >= 2 * len(chunk):
+                got.update((p, (v[2 * j], v[2 * j + 1])) for j, p in enumerate(chunk))
         except Exception:
+            pass
+    return got
+
+
+def capture_date(p, spot=None):
+    """Best effort, no third-party deps: macOS Spotlight -> ffprobe (video) -> date in filename -> mtime."""
+    content, fs = (spot or {}).get(p, ("", ""))
+    if content and content != fs:  # equal = Spotlight only copied the filesystem date, no EXIF/QuickTime date
+        try:
+            return dt.datetime.strptime(content[:19], "%Y-%m-%d %H:%M:%S"), "metadata"
+        except ValueError:
             pass
     if EXT.get(ext(p)) == "videos":
         try:
@@ -122,17 +135,18 @@ def plan_media(t, labels):
     out, seen, sources = [], {}, {"metadata": 0, "filename": 0, "mtime": 0}
     for d, dirs, files in os.walk(src):
         dirs[:] = [x for x in sorted(dirs) if not skippable(os.path.join(d, x)) and not X(os.path.join(d, x)).startswith(dest)]
-        for n in sorted(files, key=lambda f: (len(f), f)):  # shortest name wins, so "x copy.jpg" is the duplicate
+        names = [n for n in sorted(files, key=lambda f: (len(f), f))  # shortest name wins, so "x copy.jpg" is the duplicate
+                 if EXT.get(ext(n)) in ("images", "videos") and not skippable(os.path.join(d, n))]
+        spot = spotlight_dates([os.path.join(d, n) for n in names])
+        for n in names:
             p = os.path.join(d, n)
             kind = EXT.get(ext(n))
-            if kind not in ("images", "videos") or skippable(p):
-                continue
             h = sha(p)
             if h in seen:
                 out.append((p, os.path.join(dest, k["duplicates"]), "dup of " + os.path.basename(seen[h])))
                 continue
             seen[h] = p
-            when, how = capture_date(p)
+            when, how = capture_date(p, spot)
             sources[how] += 1
             lab = labels.get(n) or labels.get(p)
             kk = lab or (k["screenshots"] if SCREENSHOT.search(n) else k["chat"] if CHAT.search(n)
