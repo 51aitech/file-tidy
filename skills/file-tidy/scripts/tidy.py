@@ -122,7 +122,7 @@ def plan_media(t, labels):
     out, seen, sources = [], {}, {"metadata": 0, "filename": 0, "mtime": 0}
     for d, dirs, files in os.walk(src):
         dirs[:] = [x for x in sorted(dirs) if not skippable(os.path.join(d, x)) and not X(os.path.join(d, x)).startswith(dest)]
-        for n in sorted(files):
+        for n in sorted(files, key=lambda f: (len(f), f)):  # shortest name wins, so "x copy.jpg" is the duplicate
             p = os.path.join(d, n)
             kind = EXT.get(ext(n))
             if kind not in ("images", "videos") or skippable(p):

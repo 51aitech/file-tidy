@@ -32,6 +32,8 @@ class Tidy(unittest.TestCase):
         # media target
         touch(j("media", "IMG_1.JPG"), b"photo-a")
         touch(j("media", "sub", "IMG_1 copy.JPG"), b"photo-a")
+        touch(j("media", "IMG_2 copy.JPG"), b"photo-b")
+        touch(j("media", "IMG_2.JPG"), b"photo-b")
         touch(j("media", "Screenshot 2025-03-04 at 10.00.00.png"), b"shot")
         touch(j("media", "WhatsApp Image 2024-12-01 at 09.00.jpg"), b"chat")
         touch(j("media", "clip.mov"), b"video")
@@ -86,8 +88,9 @@ class Tidy(unittest.TestCase):
         got = sorted(os.path.relpath(os.path.join(d, f), self.j("sorted")) for d, _, fs in os.walk(self.j("sorted")) for f in fs)
         self.assertIn("screenshots/2025/2025-03/Screenshot 2025-03-04 at 10.00.00.png", got)
         self.assertIn("chat/2024/2024-12/WhatsApp Image 2024-12-01 at 09.00.jpg", got)
-        self.assertEqual(sum(g.startswith("_duplicates/") for g in got), 1)
-        self.assertEqual(sum(g.startswith("photos/") for g in got), 1)
+        self.assertEqual(sorted(g for g in got if g.startswith("_duplicates/")),
+                         ["_duplicates/IMG_1 copy.JPG", "_duplicates/IMG_2 copy.JPG"])
+        self.assertEqual(sum(g.startswith("photos/") for g in got), 2)
         self.assertEqual(sum(g.startswith("videos/") for g in got), 1)
         self.assertTrue(os.path.exists(self.j("media", "notes.txt")))
 
