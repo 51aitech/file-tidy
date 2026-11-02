@@ -18,7 +18,7 @@ macOS `mdls`/`sips` are used automatically for photo dates and HEIC thumbnails.
 ## Install as a Claude Code skill
 
 ```sh
-git clone https://github.com/<owner>/file-tidy ~/tools/file-tidy
+git clone https://github.com/CCAIClaude/file-tidy ~/tools/file-tidy
 ln -s ~/tools/file-tidy/skills/file-tidy ~/.claude/skills/file-tidy
 mkdir -p ~/.config/file-tidy
 cp ~/tools/file-tidy/skills/file-tidy/config.example.json ~/.config/file-tidy/config.json   # then edit
