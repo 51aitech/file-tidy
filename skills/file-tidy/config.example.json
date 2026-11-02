@@ -1,0 +1,32 @@
+{
+  "state_dir": "~/.local/state/file-tidy",
+  "refs_roots": ["~/Documents/notes"],
+  "targets": [
+    {
+      "name": "desktop",
+      "mode": "rules",
+      "path": "~/Desktop",
+      "keep": ["\\.command$", "\\.app$"],
+      "rules": [
+        {"match": "invoice|receipt|quotation", "to": "Invoices"},
+        {"match": "passport|visa|ID card|license", "to": "Personal IDs"},
+        {"match": "contract|NDA|agreement", "to": "Contracts"},
+        {"match": "report|analysis", "to": "Reports"}
+      ]
+    },
+    {
+      "name": "downloads",
+      "mode": "inbox",
+      "path": "~/Downloads",
+      "keep_days": 30,
+      "archive": "Archive"
+    },
+    {
+      "name": "photos",
+      "mode": "media",
+      "path": "~/Pictures/Inbox",
+      "dest": "~/Pictures/Sorted",
+      "layout": "{kind}/{yyyy}/{yyyy}-{mm}"
+    }
+  ]
+}
